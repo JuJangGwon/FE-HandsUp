@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { FieldErrors, useForm } from "react-hook-form";
 
 import Input from "@/app/_component/common/Input";
 import { cn } from "@/utils/function/cn";
@@ -31,19 +31,19 @@ const SignupForm = () => {
   }, [email]);
 
   const onSubmit = async (userAuthData: LoginFormValues) => {
-    if (idStatus === "None") {
-      show("이메일 중복검사를 해주세요", "info-solid", 3000);
-    } else if (email.length < 6) {
-      show("이메일을 입력해주세요.", "info-solid", 3000);
-    } else if (passWord !== checkPassWord) {
-      show("비밀번호가 일치하지 않습니다", "info-solid", 3000);
-    } else if (idStatus === "Ok") {
-      // signUpMutation.mutate(data);     @notice : 현재 회원가입 & 온보딩 api가 통합되어있어 분리되기전까지 회원가입 폼 전부 입력시 온보딩 페이지로 이동
-      router.push(
-        `/onboarding?id=${userAuthData.email}&password=${userAuthData.password}`
-      );
+    // signUpMutation.mutate(data);     @notice : 현재 회원가입 & 온보딩 api가 통합되어있어 분리되기전까지 회원가입 폼 전부 입력시 온보딩 페이지로 이동
+    router.push(
+      `/onboarding?id=${userAuthData.email}&password=${userAuthData.password}`
+    );
+  };
+
+  const onFormInValid = (error: FieldErrors) => {
+    const errorMessage = error[Object.keys(error)[0]]?.message;
+    if (errorMessage && typeof errorMessage === "string") {
+      show(errorMessage, "warn-solid", 3000);
     }
   };
+
   const getInputBorderColor = () => {
     if (idStatus === "None") {
       return "border-red-600 border-4";
@@ -55,7 +55,7 @@ const SignupForm = () => {
 
   return (
     <div className="mx-auto w-fit mt-[8rem]">
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, onFormInValid)}>
         <div className="ml-4">
           <label>이메일</label>
           <div className="flex">
@@ -66,25 +66,56 @@ const SignupForm = () => {
               )}>
               <Input.InputForm
                 type="email"
-                placeholder="사용하실 아이디를 입력해주세요."
+                placeholder="사용하실 이메일을 입력해주세요."
                 className="px-1 my-1 mr-1 w-[12.5rem] text-[0.85rem]"
-                {...register("email", { required: true })}
+                {...register("email", {
+                  required: "사용하실 이메일을 입력해주세요.",
+                  validate: {
+                    notDuplicateCheck: () =>
+                      idStatus === "Ok" || "이메일 중복검사를 해주세요."
+                  },
+                  minLength: {
+                    value: 9,
+                    message: "올바른 이메일 형식을 넣어주세요"
+                  }
+                })}
               />
             </Input>
             <Input.SubmitButton
               className="mx-2 px-1 py-[0.3rem] h-fit my-auto text-[0.75rem] bg-blue-300 rounded-md"
-              onButtonClick={() => idDuplicateCheck.mutate(email)}>
+              onClick={(event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                idDuplicateCheck.mutate(email);
+              }}>
               중복검사
             </Input.SubmitButton>
           </div>
           <h2 className="mt-[2rem]">비밀번호</h2>
-          <Input className="w-[13rem] h-[2.6rem] my-1 text-black">
-            <Input.InputForm
-              type="password"
-              placeholder="사용하실 비밀번호를 입력해주세요."
-              className="px-1 my-1 w-[12.5rem] text-[0.85rem]"
-              {...register("password", { required: true })}
-            />
+          <Input>
+            <Input.InputInnerBox className="w-[13rem] h-[2.6rem] my-1 text-black">
+              <Input.InputForm
+                type="password"
+                placeholder="사용하실 비밀번호를 입력해주세요."
+                className="px-1 my-1 w-[12.5rem] text-[0.85rem]"
+                {...register("password", {
+                  required: "사용하실 비밀번호를 입력해주세요.",
+                  minLength: {
+                    value: 8,
+                    message: "최소 8글자 이상 입력해주세요."
+                  },
+                  maxLength: {
+                    value: 20,
+                    message: "최대 20글자 이하로 입력해주세요."
+                  },
+                  validate: {
+                    passNotSame: () =>
+                      passWord === checkPassWord ||
+                      "비밀번호가 일치하지 않습니다"
+                  }
+                })}
+              />
+            </Input.InputInnerBox>
           </Input>
           <h2>비밀번호 확인</h2>
           <Input className="w-[13rem] h-[2.6rem] my-1 text-black">
