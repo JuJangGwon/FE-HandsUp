@@ -51,4 +51,6 @@ export type IconName =
   | "completed_purchase_trading"
   | "bookmark-fill-none"
   | "addImage"
-  | "people";
+  | "people"
+  | "check-rounded_border"
+  | "sport";
